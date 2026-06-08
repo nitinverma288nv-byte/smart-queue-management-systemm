@@ -13,4 +13,5 @@ public class RegisterRequest {
     private String email;
     private String fullName;
     private String role; // USER, STAFF, ADMIN
+    private String staffType; // HOSPITAL, BANK, COLLEGE
 }

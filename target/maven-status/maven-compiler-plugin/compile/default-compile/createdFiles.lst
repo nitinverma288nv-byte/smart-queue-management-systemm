@@ -40,7 +40,9 @@ com\smartqueue\app\repository\QueueRepository.class
 com\smartqueue\app\entity\User$UserBuilder.class
 com\smartqueue\app\service\EmailService.class
 com\smartqueue\app\entity\Doctor.class
+com\smartqueue\app\service\ReminderService.class
 com\smartqueue\app\entity\Counter.class
+com\smartqueue\app\controller\DoctorController.class
 com\smartqueue\app\repository\BankBranchRepository.class
 com\smartqueue\app\service\StaffService.class
 com\smartqueue\app\controller\ForgotPasswordController.class
@@ -75,6 +77,7 @@ com\smartqueue\app\repository\UserRepository.class
 com\smartqueue\app\entity\Department$DepartmentBuilder.class
 com\smartqueue\app\controller\UserController$PasswordChangeRequest.class
 com\smartqueue\app\serviceImpl\BankServiceImpl.class
+com\smartqueue\app\controller\SlotController.class
 com\smartqueue\app\entity\Role.class
 com\smartqueue\app\controller\UserController$ProfileUpdateRequest.class
 com\smartqueue\app\repository\AppointmentRepository.class
@@ -82,6 +85,8 @@ com\smartqueue\app\serviceImpl\NotificationServiceImpl.class
 com\smartqueue\app\entity\ResetToken.class
 com\smartqueue\app\repository\SlotRepository.class
 com\smartqueue\app\entity\Slot.class
+com\smartqueue\app\controller\SseController.class
+com\smartqueue\app\serviceImpl\BookingTransactionHelper.class
 com\smartqueue\app\entity\Bank.class
 com\smartqueue\app\serviceImpl\PasswordResetServiceImpl.class
 com\smartqueue\app\serviceImpl\HospitalServiceImpl.class

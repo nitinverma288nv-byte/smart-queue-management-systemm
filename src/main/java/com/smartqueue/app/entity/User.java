@@ -43,6 +43,13 @@ public class User {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @Column(name = "last_login_time")
+    private LocalDateTime lastLoginTime;
+
+    @Column(name = "status")
+    @Builder.Default
+    private String status = "ACTIVE";
+
 
     @PrePersist
     protected void onCreate() {

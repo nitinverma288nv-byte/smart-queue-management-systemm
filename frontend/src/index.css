@@ -4,22 +4,43 @@
 
 :root {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  color-scheme: dark;
+  color-scheme: light dark;
 }
 
+/* Dark mode default body */
 body {
   margin: 0;
   background-color: #0b0f19;
   color: #f1f5f9;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Glassmorphism custom classes */
+/* Dark mode scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0f19;
+  transition: background 0.3s ease;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+/* Glassmorphism custom classes - Dark Mode Default */
 .glass-panel {
   background: rgba(17, 24, 39, 0.7);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .glass-card {
@@ -36,21 +57,154 @@ body {
   box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.2);
 }
 
-/* Scrollbar styles */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ========================================================
+   LIGHT THEME OVERRIDES (when <html> does NOT have .dark)
+   ======================================================== */
+
+html:not(.dark) body {
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
-::-webkit-scrollbar-track {
-  background: #0b0f19;
+/* Base text light overrides */
+html:not(.dark) .text-slate-100 { color: #0f172a !important; }
+html:not(.dark) .text-slate-200 { color: #1e293b !important; }
+html:not(.dark) .text-slate-300 { color: #334155 !important; }
+html:not(.dark) .text-slate-400 { color: #475569 !important; }
+html:not(.dark) .text-slate-500 { color: #64748b !important; }
+html:not(.dark) .text-slate-600 { color: #94a3b8 !important; }
+html:not(.dark) .text-slate-50 { color: #0f172a !important; }
+
+/* Panel & Card light overrides */
+html:not(.dark) .glass-panel {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.05) !important;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
+html:not(.dark) .glass-card {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border-color: rgba(15, 23, 42, 0.06) !important;
+  color: #1e293b !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02) !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #3b82f6;
+html:not(.dark) .glass-card:hover {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 12px 20px -8px rgba(59, 130, 246, 0.12) !important;
+}
+
+/* Background overrides for containers, tables, lists */
+html:not(.dark) .bg-\[\#0b0f19\] {
+  background-color: #f8fafc !important;
+}
+
+html:not(.dark) .bg-slate-900,
+html:not(.dark) .bg-slate-900\/80,
+html:not(.dark) .bg-slate-900\/60,
+html:not(.dark) .bg-slate-900\/50,
+html:not(.dark) .bg-slate-900\/40,
+html:not(.dark) .bg-slate-900\/20,
+html:not(.dark) .bg-slate-950,
+html:not(.dark) .bg-slate-950\/80,
+html:not(.dark) .bg-slate-950\/50,
+html:not(.dark) .bg-slate-950\/20,
+html:not(.dark) .bg-slate-800,
+html:not(.dark) .bg-slate-800\/80,
+html:not(.dark) .bg-slate-800\/60,
+html:not(.dark) .bg-slate-850,
+html:not(.dark) .bg-slate-900\/50 {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-slate-900\/80 { background-color: rgba(255, 255, 255, 0.8) !important; }
+html:not(.dark) .bg-slate-900\/60 { background-color: rgba(255, 255, 255, 0.6) !important; }
+html:not(.dark) .bg-slate-900\/40 { background-color: rgba(255, 255, 255, 0.4) !important; }
+html:not(.dark) .bg-slate-900\/20 { background-color: rgba(255, 255, 255, 0.15) !important; }
+
+/* Active ticket banner overrides */
+html:not(.dark) .bg-gradient-to-r.from-blue-950\/60.to-indigo-950\/40 {
+  background: linear-gradient(135deg, #eff6ff 0%, #faf5ff 100%) !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.08) !important;
+}
+
+html:not(.dark) .bg-slate-900\/50 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html:not(.dark) .bg-blue-950\/20 {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+}
+
+/* Border overrides */
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-800\/80,
+html:not(.dark) .border-slate-800\/60,
+html:not(.dark) .border-slate-900,
+html:not(.dark) .border-slate-700,
+html:not(.dark) .border-slate-700\/50,
+html:not(.dark) .border-blue-900\/60,
+html:not(.dark) .border-blue-900\/40 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Inputs, Selects, Buttons */
+html:not(.dark) input,
+html:not(.dark) select,
+html:not(.dark) textarea {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
+}
+
+html:not(.dark) input:focus,
+html:not(.dark) select:focus,
+html:not(.dark) textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+html:not(.dark) input::placeholder {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) .bg-slate-800\/60 {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+}
+
+html:not(.dark) .bg-slate-900\/60 {
+  background-color: #f1f5f9 !important;
+}
+
+/* Scrollbars - Light mode */
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dynamic styling fixes */
+html:not(.dark) .text-white {
+  color: #0f172a !important;
+}
+html:not(.dark) .bg-gradient-to-r.from-white.to-slate-400 {
+  background: linear-gradient(to right, #0f172a, #475569) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+}
+html:not(.dark) .bg-gradient-to-tr.from-blue-600.to-indigo-600 {
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2) !important;
 }

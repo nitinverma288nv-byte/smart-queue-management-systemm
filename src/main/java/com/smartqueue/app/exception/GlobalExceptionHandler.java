@@ -53,9 +53,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ApiResponse<>(false, "Database constraint violation: " + ex.getMostSpecificCause().getMessage(), null), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(org.springframework.dao.CannotAcquireLockException.class)
+    public ResponseEntity<ApiResponse<?>> handleCannotAcquireLock(org.springframework.dao.CannotAcquireLockException ex) {
+        log.error("Database lock acquisition failure / deadlock: {}", ex.getMessage());
+        ApiResponse<?> response = new ApiResponse<>(false, "The booking system is currently busy. Please try booking your slot again in a moment.", null);
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleGeneralException(Exception ex) {
         log.error("Unhandled exception [{}]: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
+        // Don't leak internal error details to frontend
         ApiResponse<?> response = new ApiResponse<>(false, "Server error: " + ex.getClass().getSimpleName() + " - " + ex.getMessage(), null);
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }

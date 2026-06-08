@@ -99,6 +99,7 @@ public class AdminServiceImpl implements AdminService {
         stats.put("activeQueues", activeQueues);
         stats.put("activeStaff", activeStaff);
 
+
         // Core backward compatible values
         stats.put("hospitalCount", totalHospitals);
         stats.put("bankCount", totalBanks);

@@ -5,7 +5,9 @@ import com.smartqueue.app.exception.BadRequestException;
 import com.smartqueue.app.exception.ResourceNotFoundException;
 import com.smartqueue.app.repository.*;
 import com.smartqueue.app.service.CollegeService;
+import com.smartqueue.app.service.CollegeService;
 import com.smartqueue.app.service.NotificationService;
+import com.smartqueue.app.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,9 @@ public class CollegeServiceImpl implements CollegeService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private EmailService emailService;
+
     @Override
     public List<College> getAllColleges() {
         return collegeRepository.findAll();
@@ -50,33 +55,47 @@ public class CollegeServiceImpl implements CollegeService {
         return slotRepository.findByTypeAndBranchIdAndDate("COLLEGE", departmentId, date);
     }
 
+    @Autowired
+    private BookingTransactionHelper bookingTransactionHelper;
+
     @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public Appointment bookAppointment(Long userId, Long slotId, Long departmentId, String serviceName) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found!"));
-        Slot slot = slotRepository.findById(slotId)
-                .orElseThrow(() -> new ResourceNotFoundException("Slot not found!"));
+        int maxRetries = 5;
+        long delay = 100;
+        org.springframework.dao.ConcurrencyFailureException lastEx = null;
 
-        if (slot.getBookedTokens() >= slot.getMaxTokens()) {
-            throw new BadRequestException("This slot is fully booked!");
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                Appointment appt = bookingTransactionHelper.executeCollegeBooking(userId, slotId, departmentId, serviceName);
+                
+                User user = appt.getUser();
+                Slot slot = appt.getSlot();
+                notificationService.sendNotification(userId, "Your College request for " + serviceName + " is booked successfully. Slot: " + slot.getStartTime() + " - " + slot.getEndTime());
+                
+                if (emailService != null && user.getEmail() != null) {
+                    new Thread(() -> {
+                        try {
+                            emailService.sendAppointmentTimingEmail(user.getEmail(), user.getFullName(), serviceName, slot.getStartTime() + " - " + slot.getEndTime(), "COLLEGE");
+                        } catch (Exception ex) {
+                            System.err.println("❌ Background college booking email dispatch error: " + ex.getMessage());
+                        }
+                    }).start();
+                }
+                
+                com.smartqueue.app.controller.SseController.notifyQueueUpdate();
+                return appt;
+            } catch (org.springframework.dao.ConcurrencyFailureException ex) {
+                lastEx = ex;
+                try {
+                    Thread.sleep(delay * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw ex;
+                }
+            }
         }
-
-        slot.setBookedTokens(slot.getBookedTokens() + 1);
-        slotRepository.save(slot);
-
-        Appointment appointment = Appointment.builder()
-                .user(user)
-                .slot(slot)
-                .sectorType("COLLEGE")
-                .referenceId(departmentId)
-                .serviceName(serviceName)
-                .status("PENDING")
-                .build();
-
-        Appointment savedAppt = appointmentRepository.save(appointment);
-        notificationService.sendNotification(userId, "Your College request for " + serviceName + " is booked successfully. Slot: " + slot.getStartTime() + " - " + slot.getEndTime());
-
-        return savedAppt;
+        throw new BadRequestException("The booking system is currently experiencing high load. Please try booking again in a moment.");
     }
 
     @Override

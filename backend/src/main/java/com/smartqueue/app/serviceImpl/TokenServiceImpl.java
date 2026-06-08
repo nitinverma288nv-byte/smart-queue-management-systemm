@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import com.smartqueue.app.controller.SseController;
+
 
 @Service
 @Transactional
@@ -37,9 +39,66 @@ public class TokenServiceImpl implements TokenService {
     @Autowired
     private TokenSequenceRepository tokenSequenceRepository;
 
+    @Autowired
+    private com.smartqueue.app.service.EmailService emailService;
+
+    @Autowired
+    private HospitalBranchRepository hospitalBranchRepository;
+
+    @Autowired
+    private BankBranchRepository bankBranchRepository;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private DoctorRepository doctorRepository;
+
+    private String getTokenPrefix(String serviceName, String sectorType) {
+        if (serviceName == null || serviceName.trim().isEmpty()) {
+            return sectorType.substring(0, 1).toUpperCase();
+        }
+        String s = serviceName.toLowerCase();
+        if (s.contains("cold")) return "COLD";
+        if (s.contains("fever")) return "FEVER";
+        if (s.contains("headache")) return "HEAD";
+        if (s.contains("allergy") || s.contains("skin")) return "ALLERGY";
+        if (s.contains("dental")) return "DENTAL";
+        if (s.contains("ortho")) return "ORTHO";
+        if (s.contains("cardio")) return "CARDIO";
+        if (s.contains("neuro")) return "NEURO";
+        if (s.contains("emergency") || s.contains("emg")) return "EMG";
+        if (s.contains("ent")) return "ENT";
+        if (s.contains("diabet")) return "DIABET";
+        if (s.contains("eye")) return "EYE";
+        if (s.contains("checkup") || s.contains("consult")) return "CONSULT";
+        
+        // Bank services
+        if (s.contains("cash") || s.contains("withdraw") || s.contains("deposit")) return "CASH";
+        if (s.contains("kyc")) return "KYC";
+        if (s.contains("loan")) return "LOAN";
+        if (s.contains("card")) return "CARD";
+        
+        // College services
+        if (s.contains("scholar")) return "SCHOL";
+        if (s.contains("admission")) return "ADM";
+        if (s.contains("fees") || s.contains("payment")) return "FEES";
+        
+        // Default
+        return sectorType.substring(0, 3).toUpperCase();
+    }
+
+    private int getPriorityWeight(String priority) {
+        if (priority == null) return 1;
+        String p = priority.toUpperCase();
+        if (p.equals("EMERGENCY")) return 3;
+        if (p.equals("SENIOR") || p.equals("SENIOR_CITIZEN")) return 2;
+        return 1; // REGULAR
+    }
+
     @Override
     @Transactional
-    public synchronized Token generateToken(Long userId, String sectorType, Long branchId, Long counterId, String serviceName, Long appointmentId, String priority) {
+    public Token generateToken(Long userId, String sectorType, Long branchId, Long counterId, String serviceName, Long appointmentId, String priority) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found!"));
 
@@ -61,35 +120,29 @@ public class TokenServiceImpl implements TokenService {
         }
 
         Long assignedStaffId = counter.getAssignedStaffId();
+        String prefix = getTokenPrefix(serviceName, sectorType);
+        
+        final int initialVal;
+        if ("CARDIO".equals(prefix)) {
+            initialVal = 200;
+        } else if ("EMG".equals(prefix)) {
+            initialVal = 0;
+        } else {
+            initialVal = 100;
+        }
 
-        // 1. Lock the sequence record for the sector in database to serialize concurrent bookings
-        TokenSequence sequence = tokenSequenceRepository.findBySectorTypeForUpdate(sectorType.toUpperCase())
+        // 1. Lock the sequence record for the prefix in database to serialize concurrent bookings
+        TokenSequence sequence = tokenSequenceRepository.findBySectorTypeForUpdate(prefix)
                 .orElseGet(() -> {
                     TokenSequence seq = TokenSequence.builder()
-                            .sectorType(sectorType.toUpperCase())
-                            .lastValue(100)
+                            .sectorType(prefix)
+                            .lastValue(initialVal)
                             .build();
                     return tokenSequenceRepository.save(seq);
                 });
 
-        // 2. Perform "latest token lookup" as an extra layer of defense
+        // 2. Perform "latest token lookup"
         int nextNum = sequence.getLastValue() + 1;
-        java.util.Optional<Token> latestTokenOpt = tokenRepository.findFirstBySectorTypeOrderByIdDesc(sectorType.toUpperCase());
-        if (latestTokenOpt.isPresent()) {
-            Token latestToken = latestTokenOpt.get();
-            String latestTokenNumber = latestToken.getTokenNumber();
-            int dashIndex = latestTokenNumber.indexOf("-");
-            if (dashIndex != -1) {
-                try {
-                    int num = Integer.parseInt(latestTokenNumber.substring(dashIndex + 1));
-                    if (num >= nextNum) {
-                        nextNum = num + 1;
-                    }
-                } catch (NumberFormatException e) {
-                    // Ignore parsing errors
-                }
-            }
-        }
 
         // 3. Update the sequence record
         sequence.setLastValue(nextNum);
@@ -112,9 +165,13 @@ public class TokenServiceImpl implements TokenService {
         queue.setAssignedStaffId(assignedStaffId);
         queueRepository.save(queue);
 
-        // 5. Generate and save the unique token
-        String prefix = sectorType.substring(0, 1).toUpperCase(); // H, B, or C
-        String tokenNumber = prefix + "-" + nextNum;
+        // 5. Generate and save the unique token with custom formats
+        String tokenNumber;
+        if ("EMG".equals(prefix)) {
+            tokenNumber = prefix + "-" + String.format("%03d", nextNum);
+        } else {
+            tokenNumber = prefix + "-" + nextNum;
+        }
 
         Token token = Token.builder()
                 .tokenNumber(tokenNumber)
@@ -132,9 +189,74 @@ public class TokenServiceImpl implements TokenService {
 
         Token savedToken = tokenRepository.save(token);
 
-        // Notify user
+        // Notify user via in-app notification
         notificationService.sendNotification(userId, "Token generated successfully: " + tokenNumber + ". Your priority is " + token.getPriority() + ".");
 
+        // Dispatch immediate Gmail booking reminder with full token details
+        if (emailService != null && user.getEmail() != null) {
+            try {
+                String location = "Main Desk";
+                if ("HOSPITAL".equalsIgnoreCase(sectorType)) {
+                    if (branchId != null) {
+                        hospitalBranchRepository.findById(branchId).ifPresent(branch -> {
+                            String hospName = branch.getHospital() != null ? branch.getHospital().getName() : "";
+                            token.setHospitalName(hospName + " (" + branch.getName() + ")");
+                        });
+                    }
+                    if (appointment != null && appointment.getReferenceId() != null) {
+                        doctorRepository.findById(appointment.getReferenceId()).ifPresent(doctor -> {
+                            token.setDoctorName(doctor.getName() + " (" + doctor.getSpecialization() + ")");
+                        });
+                    }
+                    location = token.getHospitalName() != null ? token.getHospitalName() : "Main Hospital Branch";
+                } else if ("BANK".equalsIgnoreCase(sectorType)) {
+                    if (branchId != null) {
+                        bankBranchRepository.findById(branchId).ifPresent(branch -> {
+                            String bankName = branch.getBank() != null ? branch.getBank().getName() : "";
+                            token.setHospitalName(bankName + " (" + branch.getName() + ")");
+                        });
+                    }
+                    location = token.getHospitalName() != null ? token.getHospitalName() : "Main Bank Branch";
+                } else if ("COLLEGE".equalsIgnoreCase(sectorType)) {
+                    if (branchId != null) {
+                        departmentRepository.findById(branchId).ifPresent(dept -> {
+                            String collegeName = dept.getCollege() != null ? dept.getCollege().getName() : "";
+                            token.setHospitalName(collegeName + " (" + dept.getName() + ")");
+                        });
+                    }
+                    location = token.getHospitalName() != null ? token.getHospitalName() : "Main College Desk";
+                }
+
+                String timing = "Direct Entry Queue";
+                if (appointment != null && appointment.getSlot() != null) {
+                    Slot slot = appointment.getSlot();
+                    timing = slot.getStartTime() + " - " + slot.getEndTime() + " on " + slot.getDate();
+                }
+
+                final String finalLocation = location;
+                final String finalTiming = timing;
+                new Thread(() -> {
+                    try {
+                        emailService.sendTokenBookingEmail(
+                            user.getEmail(),
+                            user.getFullName(),
+                            tokenNumber,
+                            sectorType.toUpperCase(),
+                            serviceName,
+                            finalTiming,
+                            token.getPriority(),
+                            finalLocation
+                        );
+                    } catch (Exception ex) {
+                        System.err.println("❌ Background email dispatch error: " + ex.getMessage());
+                    }
+                }).start();
+            } catch (Exception ex) {
+                System.err.println("❌ Failed to initiate token booking email: " + ex.getMessage());
+            }
+        }
+
+        SseController.notifyQueueUpdate();
         return savedToken;
     }
 
@@ -151,6 +273,7 @@ public class TokenServiceImpl implements TokenService {
         Token savedToken = tokenRepository.save(token);
 
         notificationService.sendNotification(token.getUser().getId(), "Your token " + token.getTokenNumber() + " status is updated to " + status + ".");
+        SseController.notifyQueueUpdate();
         return savedToken;
     }
 
@@ -171,13 +294,13 @@ public class TokenServiceImpl implements TokenService {
             return null;
         }
 
-        // Sort: EMERGENCY first, then by ID (FIFO)
+        // Sort: EMERGENCY (3) first, then SENIOR (2), then REGULAR (1), then by ID (FIFO)
         Token nextToken = waitingTokens.stream()
                 .sorted((t1, t2) -> {
-                    if (t1.getPriority().equals("EMERGENCY") && !t2.getPriority().equals("EMERGENCY")) {
-                        return -1;
-                    } else if (!t1.getPriority().equals("EMERGENCY") && t2.getPriority().equals("EMERGENCY")) {
-                        return 1;
+                    int w1 = getPriorityWeight(t1.getPriority());
+                    int w2 = getPriorityWeight(t2.getPriority());
+                    if (w1 != w2) {
+                        return Integer.compare(w2, w1);
                     }
                     return t1.getId().compareTo(t2.getId());
                 })
@@ -199,6 +322,7 @@ public class TokenServiceImpl implements TokenService {
             notifyWaitingUsers(counter.getSectorType(), counter.getBranchId(), counter.getId());
         }
 
+        SseController.notifyQueueUpdate();
         return nextToken;
     }
 
@@ -217,6 +341,7 @@ public class TokenServiceImpl implements TokenService {
             throw new BadRequestException("Token is not assigned to a counter.");
         }
         callNextToken(token.getCounterId());
+        SseController.notifyQueueUpdate();
         return token;
     }
 
@@ -228,6 +353,7 @@ public class TokenServiceImpl implements TokenService {
             throw new BadRequestException("Token is not assigned to a counter.");
         }
         callNextToken(token.getCounterId());
+        SseController.notifyQueueUpdate();
         return token;
     }
 
@@ -242,6 +368,7 @@ public class TokenServiceImpl implements TokenService {
         if (token.getCounterId() != null) {
             notifyWaitingUsers(token.getSectorType(), token.getBranchId(), token.getCounterId());
         }
+        SseController.notifyQueueUpdate();
     }
 
     @Override
@@ -282,6 +409,7 @@ public class TokenServiceImpl implements TokenService {
 
         notificationService.sendNotification(token.getUser().getId(), "Your token " + token.getTokenNumber() + " is now being served! Please proceed to the counter.");
         notifyWaitingUsers(counter.getSectorType(), counter.getBranchId(), counter.getId());
+        SseController.notifyQueueUpdate();
 
         return token;
     }

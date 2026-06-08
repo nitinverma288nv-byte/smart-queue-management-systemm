@@ -7,4 +7,5 @@ import java.util.List;
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
     List<Appointment> findByUserId(Long userId);
     List<Appointment> findBySectorTypeAndReferenceId(String sectorType, Long referenceId);
+    boolean existsByUserIdAndSlotIdAndStatusNot(Long userId, Long slotId, String status);
 }

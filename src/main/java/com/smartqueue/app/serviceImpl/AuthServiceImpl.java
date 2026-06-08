@@ -65,6 +65,7 @@ public class AuthServiceImpl implements AuthService {
 
         User savedUser = userRepository.save(user);
 
+        // Backend uses generateToken(User) — not (String, String)
         String token = jwtTokenProvider.generateToken(savedUser);
 
         return new AuthResponse(token, savedUser.getUsername(), savedUser.getRole().name(), savedUser.getEmail(), savedUser.getFullName(), savedUser.getId());
@@ -79,6 +80,10 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found!"));
 
+        user.setLastLoginTime(java.time.LocalDateTime.now());
+        userRepository.save(user);
+
+        // Backend uses generateToken(User) — not (String, String)
         String token = jwtTokenProvider.generateToken(user);
 
         return new AuthResponse(token, user.getUsername(), user.getRole().name(), user.getEmail(), user.getFullName(), user.getId());

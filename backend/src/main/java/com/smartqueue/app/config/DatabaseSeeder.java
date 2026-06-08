@@ -93,6 +93,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         User tara    = saveUser("tara",    "Root@123", "tara@queue.com",    "Acropolis Staff",     Role.ROLE_STAFF, "COLLEGE");
         User meher   = saveUser("meher",   "Root@123", "meher@queue.com",   "IET DAVV Staff",      Role.ROLE_STAFF, "COLLEGE");
         User aisha   = saveUser("aisha",   "Root@123", "aisha@queue.com",   "CDGI Staff",          Role.ROLE_STAFF, "COLLEGE");
+        User pawan   = saveUser("pawan",   "Root@123", "pawan@queue.com",   "CDGI Engineering Staff", Role.ROLE_STAFF, "COLLEGE");
 
         // ══════════════════════════════════════════════════════════════════════
         // 2.  HOSPITAL SECTOR — 5 Hospitals × 2 Branches × 5 Unique Doctors
@@ -236,6 +237,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .build());
 
             for (int di = 1; di <= 3; di++) {
+                // Skip City Campus (di == 2) for CDGI (bi == 5)
+                if (bi == 5 && di == 2) {
+                    continue;
+                }
+
                 String deptName = "";
                 String officeName = "";
                 if (di == 1) {
@@ -257,7 +263,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .build());
 
                 User mainCollegeStaff = null;
-                if (di == 1 || di == 3) {
+                if (di == 1) {
                     if (bi == 0) mainCollegeStaff = pari;
                     else if (bi == 1) mainCollegeStaff = riya;
                     else if (bi == 2) mainCollegeStaff = kavya;
@@ -265,6 +271,9 @@ public class DatabaseSeeder implements CommandLineRunner {
                     else if (bi == 4) mainCollegeStaff = meher;
                     else mainCollegeStaff = aisha;
 
+                    seedCollegeCounter("Student Help Desk", "COLLEGE", dept.getId(), mainCollegeStaff);
+                } else if (di == 3 && bi == 5) {
+                    mainCollegeStaff = pawan;
                     seedCollegeCounter("Student Help Desk", "COLLEGE", dept.getId(), mainCollegeStaff);
                 }
             }

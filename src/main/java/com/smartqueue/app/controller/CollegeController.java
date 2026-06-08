@@ -5,6 +5,8 @@ import com.smartqueue.app.entity.College;
 import com.smartqueue.app.entity.Department;
 import com.smartqueue.app.entity.Slot;
 import com.smartqueue.app.entity.Appointment;
+import com.smartqueue.app.entity.Counter;
+import com.smartqueue.app.repository.CounterRepository;
 import com.smartqueue.app.service.CollegeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -16,11 +18,20 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/college")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"})
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5178", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175", "http://127.0.0.1:5176", "http://127.0.0.1:5177", "http://127.0.0.1:5178"})
 public class CollegeController {
 
     @Autowired
     private CollegeService collegeService;
+
+    @Autowired
+    private CounterRepository counterRepository;
+
+    @GetMapping("/branch/{branchId}/counters")
+    public ResponseEntity<ApiResponse<List<Counter>>> getCounters(@PathVariable Long branchId) {
+        List<Counter> counters = counterRepository.findByTypeAndReferenceId("COLLEGE", branchId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Counters fetched successfully!", counters));
+    }
 
     @GetMapping("/list")
     public ResponseEntity<ApiResponse<List<College>>> getAllColleges() {

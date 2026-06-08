@@ -20,7 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/hospital")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"})
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5178", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175", "http://127.0.0.1:5176", "http://127.0.0.1:5177", "http://127.0.0.1:5178"})
 public class HospitalController {
 
     @Autowired
@@ -55,16 +55,53 @@ public class HospitalController {
     @GetMapping("/doctor/{doctorId}/slots")
     public ResponseEntity<ApiResponse<List<Slot>>> getSlots(
             @PathVariable Long doctorId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false, defaultValue = "") String serviceName) {
+        
+        String s = serviceName.toLowerCase();
+        int maxCap = 3; // default max capacity 3
+        int duration = 30; // default 30 mins
+        
+        if (s.contains("cold") || s.contains("fever") || s.contains("allergy") || s.contains("skin") || 
+            s.contains("ent") || s.contains("diabet") || s.contains("eye") || s.contains("checkup") || s.contains("consult")) {
+            duration = 15;
+        } else if (s.contains("headache")) {
+            duration = 20;
+        } else if (s.contains("dental") || s.contains("ortho")) {
+            duration = 30;
+        } else if (s.contains("cardio")) {
+            duration = 45;
+        } else if (s.contains("neuro")) {
+            duration = 60;
+        } else if (s.contains("emergency")) {
+            duration = 10;
+        }
+
         List<Slot> slots = hospitalService.getSlotsByDoctorAndDate(doctorId, date);
+        if (!slots.isEmpty()) {
+            boolean hasBookings = slots.stream().anyMatch(slot -> slot.getBookedTokens() > 0);
+            if (!hasBookings) {
+                slotRepository.deleteAll(slots);
+                slots.clear();
+            }
+        }
         if (slots.isEmpty()) {
             Doctor doctor = doctorRepository.findById(doctorId).orElse(null);
             if (doctor != null) {
-                slotRepository.save(Slot.builder().type("DOCTOR").referenceId(doctorId).sectorType("HOSPITAL").branchId(doctor.getBranch().getId()).date(date).startTime(LocalTime.of(9, 0)).endTime(LocalTime.of(9, 30)).maxTokens(10).bookedTokens(0).availability(true).maxCapacity(10).build());
-                slotRepository.save(Slot.builder().type("DOCTOR").referenceId(doctorId).sectorType("HOSPITAL").branchId(doctor.getBranch().getId()).date(date).startTime(LocalTime.of(9, 30)).endTime(LocalTime.of(10, 0)).maxTokens(10).bookedTokens(0).availability(true).maxCapacity(10).build());
-                slotRepository.save(Slot.builder().type("DOCTOR").referenceId(doctorId).sectorType("HOSPITAL").branchId(doctor.getBranch().getId()).date(date).startTime(LocalTime.of(10, 0)).endTime(LocalTime.of(10, 30)).maxTokens(10).bookedTokens(0).availability(true).maxCapacity(10).build());
-                slotRepository.save(Slot.builder().type("DOCTOR").referenceId(doctorId).sectorType("HOSPITAL").branchId(doctor.getBranch().getId()).date(date).startTime(LocalTime.of(10, 30)).endTime(LocalTime.of(11, 0)).maxTokens(10).bookedTokens(0).availability(true).maxCapacity(10).build());
-                slotRepository.save(Slot.builder().type("DOCTOR").referenceId(doctorId).sectorType("HOSPITAL").branchId(doctor.getBranch().getId()).date(date).startTime(LocalTime.of(11, 0)).endTime(LocalTime.of(11, 30)).maxTokens(10).bookedTokens(0).availability(true).maxCapacity(10).build());
+                LocalTime time = LocalTime.of(9, 0);
+                LocalTime endTimeOfDay = LocalTime.of(17, 0); // 5 PM
+                while (time.isBefore(endTimeOfDay)) {
+                    LocalTime nextTime = time.plusMinutes(duration);
+                    if (nextTime.isAfter(endTimeOfDay)) break;
+                    
+                    slotRepository.save(Slot.builder()
+                            .type("DOCTOR").referenceId(doctorId).sectorType("HOSPITAL")
+                            .branchId(doctor.getBranch().getId()).date(date)
+                            .startTime(time).endTime(nextTime)
+                            .maxTokens(maxCap).bookedTokens(0).availability(true).maxCapacity(maxCap)
+                            .build());
+                    time = nextTime;
+                }
                 slots = hospitalService.getSlotsByDoctorAndDate(doctorId, date);
             }
         }

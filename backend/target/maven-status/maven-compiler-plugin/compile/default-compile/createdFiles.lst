@@ -21,7 +21,6 @@ com\smartqueue\app\entity\Hospital.class
 com\smartqueue\app\repository\CounterRepository.class
 com\smartqueue\app\serviceImpl\TokenServiceImpl.class
 com\smartqueue\app\entity\HospitalBranch.class
-com\smartqueue\app\entity\Payment$PaymentBuilder.class
 com\smartqueue\app\controller\BankController.class
 com\smartqueue\app\security\JwtAuthenticationFilter.class
 com\smartqueue\app\service\TokenService.class
@@ -31,18 +30,17 @@ com\smartqueue\app\service\NotificationService.class
 com\smartqueue\app\entity\Staff$StaffBuilder.class
 com\smartqueue\app\serviceImpl\StaffServiceImpl.class
 com\smartqueue\app\repository\NotificationRepository.class
-com\smartqueue\app\repository\PaymentRepository.class
 com\smartqueue\app\entity\Doctor$DoctorBuilder.class
 com\smartqueue\app\service\BankService.class
 com\smartqueue\app\dto\AuthRequest.class
 com\smartqueue\app\repository\DepartmentRepository.class
-com\smartqueue\app\controller\PaymentController.class
 com\smartqueue\app\entity\Token.class
 com\smartqueue\app\controller\CollegeController.class
 com\smartqueue\app\repository\QueueRepository.class
 com\smartqueue\app\entity\User$UserBuilder.class
 com\smartqueue\app\service\EmailService.class
 com\smartqueue\app\entity\Doctor.class
+com\smartqueue\app\service\ReminderService.class
 com\smartqueue\app\entity\Counter.class
 com\smartqueue\app\controller\DoctorController.class
 com\smartqueue\app\repository\BankBranchRepository.class
@@ -87,6 +85,8 @@ com\smartqueue\app\serviceImpl\NotificationServiceImpl.class
 com\smartqueue\app\entity\ResetToken.class
 com\smartqueue\app\repository\SlotRepository.class
 com\smartqueue\app\entity\Slot.class
+com\smartqueue\app\controller\SseController.class
+com\smartqueue\app\serviceImpl\BookingTransactionHelper.class
 com\smartqueue\app\entity\Bank.class
 com\smartqueue\app\serviceImpl\PasswordResetServiceImpl.class
 com\smartqueue\app\serviceImpl\HospitalServiceImpl.class
@@ -95,7 +95,6 @@ com\smartqueue\app\repository\TokenRepository.class
 com\smartqueue\app\serviceImpl\EmailServiceImpl.class
 com\smartqueue\app\repository\HospitalRepository.class
 com\smartqueue\app\security\UserDetailsServiceImpl.class
-com\smartqueue\app\entity\Payment.class
 com\smartqueue\app\entity\Bank$BankBuilder.class
 com\smartqueue\app\SmartQueueApplication.class
 com\smartqueue\app\controller\NotificationController.class

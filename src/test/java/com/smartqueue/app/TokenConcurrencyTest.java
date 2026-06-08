@@ -2,8 +2,11 @@ package com.smartqueue.app;
 
 import com.smartqueue.app.entity.Counter;
 import com.smartqueue.app.entity.Token;
+import com.smartqueue.app.entity.User;
+import com.smartqueue.app.entity.Role;
 import com.smartqueue.app.repository.CounterRepository;
 import com.smartqueue.app.repository.TokenRepository;
+import com.smartqueue.app.repository.UserRepository;
 import com.smartqueue.app.service.TokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +36,9 @@ public class TokenConcurrencyTest {
     @Autowired
     private TokenRepository tokenRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
     public void testConcurrentTokenGeneration() throws InterruptedException {
         int threadCount = 10;
@@ -46,8 +52,13 @@ public class TokenConcurrencyTest {
         }
         Counter hospitalCounter = hospitalCounterOpt.get();
 
+        User testUser = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.ROLE_USER || u.getRole() == Role.ROLE_ADMIN)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No test user found"));
+        final long userId = testUser.getId();
+
         for (int i = 0; i < threadCount; i++) {
-            final long userId = 5L; // normalUser seeded in DatabaseSeeder is ID 5
             executorService.submit(() -> {
                 try {
                     Token token = tokenService.generateToken(userId, "HOSPITAL", hospitalCounter.getBranchId(), hospitalCounter.getId(), "OPD", null, "REGULAR");
@@ -79,7 +90,11 @@ public class TokenConcurrencyTest {
         Counter bankCounter = counterRepository.findBySectorType("BANK").stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException("No BANK counter seeded for testing"));
 
-        final long userId = 5L;
+        User testUser = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.ROLE_USER || u.getRole() == Role.ROLE_ADMIN)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No test user found"));
+        final long userId = testUser.getId();
         Token hospitalToken = tokenService.generateToken(userId, "HOSPITAL", hospitalCounter.getBranchId(), hospitalCounter.getId(), "OPD", null, "REGULAR");
         Token bankToken = tokenService.generateToken(userId, "BANK", bankCounter.getBranchId(), bankCounter.getId(), "Cash", null, "REGULAR");
 
