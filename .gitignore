@@ -1,0 +1,5 @@
+target/
+*.class
+node_modules/
+node_portable/
+.vscode/
