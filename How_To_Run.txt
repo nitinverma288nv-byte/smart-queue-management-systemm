@@ -1,0 +1,79 @@
+======================================================================
+           SMART QUEUE MANAGEMENT SYSTEM - RUNNING GUIDE
+======================================================================
+
+This guide provides step-by-step instructions to set up and run the 
+Smart Queue Management System (both Spring Boot Backend & React Frontend).
+
+----------------------------------------------------------------------
+1. PREREQUISITES
+----------------------------------------------------------------------
+Make sure you have the following installed on your system:
+- Java JDK 17 or above
+- Node.js (v18 or above recommended) and npm
+- MySQL Server (running on default port 3306)
+- Maven (or you can use the maven wrapper included in the project)
+
+----------------------------------------------------------------------
+2. DATABASE SETUP
+----------------------------------------------------------------------
+1. Open your MySQL client and create a database named 'queue_db':
+   CREATE DATABASE queue_db;
+
+2. The backend is configured to use the following credentials by default:
+   - URL: jdbc:mysql://localhost:3306/queue_db
+   - Username: root
+   - Password: @nitinv288# (Default configured in project, can be changed to your MySQL password)
+
+3. If you need to change the database credentials, open the file:
+   \backend\src\main\resources\application.properties
+   And modify the following lines:
+   spring.datasource.username=your_username
+   spring.datasource.password=your_password
+
+*NOTE: You do NOT need to import any SQL dump file. The application 
+automatically seeds all tables, branches, departments, doctors, slots, 
+and default staff accounts upon launching for the first time.*
+
+----------------------------------------------------------------------
+3. RUNNING THE APPLICATION (AUTOMATIC METHOD)
+----------------------------------------------------------------------
+A startup script is included to launch both servers in one click.
+
+1. Double-click the file:
+   Run_Project.bat
+
+2. The script will automatically:
+   - Check if frontend dependencies (node_modules) are installed, and
+     run 'npm install' if they are missing.
+   - Start the Spring Boot Backend in a green console window.
+   - Start the React Frontend in a blue console window.
+
+3. Once launched:
+   - Backend API Doc (Swagger): http://localhost:9999/swagger-ui.html
+   - Frontend Application: http://localhost:5173
+
+----------------------------------------------------------------------
+4. RUNNING THE APPLICATION (MANUAL METHOD)
+----------------------------------------------------------------------
+If you prefer running the servers manually via terminal:
+
+A. Start the Spring Boot Backend:
+   1. Open command prompt/terminal and navigate to the backend folder:
+      cd backend
+   2. Run the Maven startup command:
+      mvn spring-boot:run
+   3. The server will run on port 9999.
+
+B. Start the React Frontend:
+   1. Open a second terminal window and navigate to the frontend folder:
+      cd frontend
+   2. Install node dependencies (Only needed for the first-time setup):
+      npm install
+   3. Start the Vite development server:
+      npm run dev
+   4. The server will run on port 5173.
+
+======================================================================
+Thank you for using the Smart Queue Management System!
+======================================================================

@@ -21,12 +21,29 @@ if %errorlevel% equ 0 (
 
 :: Starting Spring Boot Backend
 echo [2/3] Starting Backend Server on port 9999...
-start "Smart Queue Backend" cmd /k "color 0A && .\apache-maven-3.9.9\bin\mvn.cmd spring-boot:run"
+if exist ".\apache-maven-3.9.9\bin\mvn.cmd" (
+    start "Smart Queue Backend" cmd /k "color 0A && cd backend && ..\apache-maven-3.9.9\bin\mvn.cmd spring-boot:run"
+) else (
+    start "Smart Queue Backend" cmd /k "color 0A && cd backend && mvn spring-boot:run"
+)
 
 :: Starting React Frontend (Vite)
 echo [3/3] Starting Frontend Server on port 5173...
 cd frontend
-start "Smart Queue Frontend" cmd /k "color 0B && ..\node_portable\node-v22.12.0-win-x64\npm.cmd run dev"
+if exist "..\node_portable\node-v22.12.0-win-x64\npm.cmd" (
+    if not exist "node_modules" (
+        echo [INFO] node_modules not found. Running npm install...
+        call ..\node_portable\node-v22.12.0-win-x64\npm.cmd install
+    )
+    start "Smart Queue Frontend" cmd /k "color 0B && ..\node_portable\node-v22.12.0-win-x64\npm.cmd run dev"
+) else (
+    if not exist "node_modules" (
+        echo [INFO] node_modules not found. Running npm install...
+        call npm install
+    )
+    start "Smart Queue Frontend" cmd /k "color 0B && npm run dev"
+)
+cd ..
 
 echo.
 echo ======================================================================

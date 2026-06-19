@@ -6,11 +6,10 @@ import {
   BookOpen, 
   Clock, 
   Users, 
-  User as UserIcon, 
+  // User as UserIcon,  
   Bell, 
   LogOut, 
   ArrowRight, 
-  ArrowLeft,
   CheckCircle, 
   AlertTriangle, 
   UserCheck, 
@@ -33,18 +32,18 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const stored = sessionStorage.getItem('sq_user');
+    const stored = localStorage.getItem('sq_user');
     return stored ? JSON.parse(stored) : null;
   });
 
   const login = (userData) => {
     setUser(userData);
-    sessionStorage.setItem('sq_user', JSON.stringify(userData));
+    localStorage.setItem('sq_user', JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem('sq_user');
+    localStorage.removeItem('sq_user');
   };
 
   return (
@@ -67,22 +66,9 @@ export default function App() {
 
 function MainLayout() {
   const { user, logout } = useAuth();
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('sq_theme') || 'light';
-  });
-
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('sq_theme', theme);
-  }, [theme]);
-
   const [page, setPage] = useState(() => {
-    const storedPage = sessionStorage.getItem('sq_page');
-    const storedUser = sessionStorage.getItem('sq_user');
+    const storedPage = localStorage.getItem('sq_page');
+    const storedUser = localStorage.getItem('sq_user');
     
     if (storedUser) {
       try {
@@ -291,26 +277,13 @@ function MainLayout() {
     }
 
     if (page) {
-      sessionStorage.setItem('sq_page', page);
+      localStorage.setItem('sq_page', page);
     }
   }, [user, page]);
 
-  // Prevent browser back button after logout
-  useEffect(() => {
-    if (!user) {
-      const blockBack = () => {
-        window.history.pushState(null, '', window.location.href);
-      };
-      window.addEventListener('popstate', blockBack);
-      return () => window.removeEventListener('popstate', blockBack);
-    }
-  }, [user]);
-
   const handleLogout = () => {
     logout();
-    sessionStorage.clear();
     setPage('landing');
-    window.history.pushState(null, '', window.location.href);
   };
 
   const markAllRead = async () => {
@@ -352,18 +325,6 @@ function MainLayout() {
         </div>
 
         <div className="flex items-center space-x-6">
-          <button 
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 transition-all flex items-center justify-center cursor-pointer shadow-md"
-            title={theme === 'dark' ? "Switch to Light Theme" : "Switch to Dark Theme"}
-          >
-            {theme === 'dark' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-800"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-            )}
-          </button>
-
           {user ? (
             <>
               {user.role === 'ROLE_USER' && (
@@ -509,7 +470,7 @@ function MainLayout() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Need Assistance? IT Help & Support</span>
             <div className="flex items-center gap-2 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              <a href="mailto:nitinverma288nv@gmail.com" className="hover:underline">nitinverma288nv@gmail.com</a>
+              <a href="mailto:pankajlucky678@gmail.com" className="hover:underline">pankajlucky678@gmail.com</a>
             </div>
             <span className="text-[10px] text-slate-500">Reach out to our operations desk for technical queries, instant queue disputes or campus support.</span>
           </div>
@@ -1439,7 +1400,6 @@ function UserDashboard({ setPage, activeToken, tokenPosition, setActiveToken, ac
   const { user } = useAuth();
   const [history, setHistory] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedDomain, setSelectedDomain] = useState('HOSPITAL'); // HOSPITAL, BANK, COLLEGE
 
   // Rescheduling states
   const [reschedulingToken, setReschedulingToken] = useState(null);
@@ -1529,33 +1489,6 @@ function UserDashboard({ setPage, activeToken, tokenPosition, setActiveToken, ac
     }
   };
 
-  // Filter logs & active tokens based on domain selection
-  const filteredActiveTokens = activeTokens.filter(t => t.sectorType === selectedDomain);
-  const filteredHistory = history.filter(h => h.sectorType === selectedDomain);
-
-  // Compute dynamic stats for active domain on the fly
-  const totalDomainIssued = filteredHistory.length;
-  const activeDomainCount = filteredActiveTokens.length;
-  const completedDomainCount = filteredHistory.filter(h => h.status === 'COMPLETED').length;
-  
-  let avgWaitTime = 0;
-  const completedHistory = filteredHistory.filter(h => h.status === 'COMPLETED' && h.createdAt && h.updatedAt);
-  if (completedHistory.length > 0) {
-    let totalMins = 0;
-    completedHistory.forEach(h => {
-      let duration = (new Date(h.updatedAt) - new Date(h.createdAt)) / 60000;
-      if (isNaN(duration) || duration <= 0) {
-        duration = 12;
-      } else if (duration > 60) {
-        duration = 10 + (h.id % 15);
-      }
-      totalMins += Math.round(duration);
-    });
-    avgWaitTime = Math.round(totalMins / completedHistory.length);
-  } else if (activeDomainCount > 0) {
-    avgWaitTime = 10 + (activeDomainCount * 5) + (activeDomainCount % 3);
-  }
-
   return (
     <div className="space-y-8">
       {/* Welcome header */}
@@ -1567,108 +1500,22 @@ function UserDashboard({ setPage, activeToken, tokenPosition, setActiveToken, ac
         <button 
           onClick={fetchHistory}
           disabled={refreshing}
-          className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold rounded-xl text-slate-300 transition-colors cursor-pointer"
+          className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold rounded-xl text-slate-300 transition-colors"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
           <span>Sync Status</span>
         </button>
       </div>
 
-      {/* Domain Selection Grid (CHANGE 4 & CHANGE 6) */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold flex items-center gap-2">
-          <Sliders className="w-5 h-5 text-indigo-400" />
-          Choose Active Workspace Domain
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Hospital Domain Card */}
-          <div 
-            onClick={() => setSelectedDomain('HOSPITAL')}
-            className={`glass-card rounded-2xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 ${selectedDomain === 'HOSPITAL' ? 'border-rose-500/50 bg-gradient-to-br from-rose-950/20 to-slate-900/40 shadow-lg shadow-rose-500/5 ring-1 ring-rose-500/30' : 'hover:border-rose-500/20'}`}
-          >
-            <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-4">
-              <Activity className="w-6 h-6 text-rose-400" />
-            </div>
-            <div className="flex justify-between items-center">
-              <h4 className="text-lg font-bold text-slate-100">Hospital Domain</h4>
-              {selectedDomain === 'HOSPITAL' && (
-                <span className="px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 border border-rose-500/35 text-rose-400 rounded-full">Active</span>
-              )}
-            </div>
-            <p className="text-slate-400 text-xs mt-2 leading-relaxed">Doctor consultations queue, patient token generation, check-in & status tracking.</p>
-          </div>
-
-          {/* Bank Domain Card */}
-          <div 
-            onClick={() => setSelectedDomain('BANK')}
-            className={`glass-card rounded-2xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 ${selectedDomain === 'BANK' ? 'border-blue-500/50 bg-gradient-to-br from-blue-950/20 to-slate-900/40 shadow-lg shadow-blue-500/5 ring-1 ring-blue-500/30' : 'hover:border-blue-500/20'}`}
-          >
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4">
-              <Building className="w-6 h-6 text-blue-400" />
-            </div>
-            <div className="flex justify-between items-center">
-              <h4 className="text-lg font-bold text-slate-100">Banking Domain</h4>
-              {selectedDomain === 'BANK' && (
-                <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-500/10 border border-blue-500/35 text-blue-400 rounded-full">Active</span>
-              )}
-            </div>
-            <p className="text-slate-400 text-xs mt-2 leading-relaxed">Cash transactions, credit/loan consultations, audits, account opening registers.</p>
-          </div>
-
-          {/* College Domain Card */}
-          <div 
-            onClick={() => setSelectedDomain('COLLEGE')}
-            className={`glass-card rounded-2xl p-6 cursor-pointer relative overflow-hidden transition-all duration-300 ${selectedDomain === 'COLLEGE' ? 'border-violet-500/50 bg-gradient-to-br from-violet-950/20 to-slate-900/40 shadow-lg shadow-violet-500/5 ring-1 ring-violet-500/30' : 'hover:border-violet-500/20'}`}
-          >
-            <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-4">
-              <BookOpen className="w-6 h-6 text-violet-400" />
-            </div>
-            <div className="flex justify-between items-center">
-              <h4 className="text-lg font-bold text-slate-100">College Domain</h4>
-              {selectedDomain === 'COLLEGE' && (
-                <span className="px-2 py-0.5 text-[10px] font-bold bg-violet-500/10 border border-violet-500/35 text-violet-400 rounded-full">Active</span>
-              )}
-            </div>
-            <p className="text-slate-400 text-xs mt-2 leading-relaxed">Student registrations, ID desk support, academic fee payments, bonafides.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Domain Quick Stats Panel */}
-      <div className="glass-panel border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-xl">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-1.5">
-          <Activity className="w-4 h-4 text-blue-500" />
-          {selectedDomain.toLowerCase()} Analytics Summary
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-slate-900/40 border border-slate-850 rounded-xl text-center">
-            <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Total Bookings</span>
-            <span className="text-2xl font-extrabold text-slate-200">{totalDomainIssued}</span>
-          </div>
-          <div className="p-4 bg-slate-900/40 border border-slate-850 rounded-xl text-center">
-            <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Active Tickets</span>
-            <span className="text-2xl font-extrabold text-blue-400">{activeDomainCount}</span>
-          </div>
-          <div className="p-4 bg-slate-900/40 border border-slate-850 rounded-xl text-center">
-            <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Completed Visits</span>
-            <span className="text-2xl font-extrabold text-emerald-400">{completedDomainCount}</span>
-          </div>
-          <div className="p-4 bg-slate-900/40 border border-slate-850 rounded-xl text-center">
-            <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Est. Avg Wait Time</span>
-            <span className="text-2xl font-extrabold text-amber-400">{avgWaitTime} mins</span>
-          </div>
-        </div>
-      </div>
-
       {/* Active Live Token Position Panel */}
-      {filteredActiveTokens && filteredActiveTokens.length > 0 ? (
+      {activeTokens && activeTokens.length > 0 ? (
         <div className="space-y-4">
           <h3 className="text-xl font-bold flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-500" />
-            Active Live Tickets ({filteredActiveTokens.length})
+            Active Live Tickets ({activeTokens.length})
           </h3>
           <div className="grid grid-cols-1 gap-6">
-            {filteredActiveTokens.map(tok => {
+            {activeTokens.map(tok => {
               const pos = tokenPositions[tok.id] || { servingToken: 'None', peopleAhead: '-', waitingTime: '-', priority: tok.priority };
               return (
                 <div key={tok.id} className="rounded-2xl bg-gradient-to-r from-blue-950/60 to-indigo-950/40 border border-blue-900/60 shadow-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8 animate-pulse-subtle">
@@ -1753,33 +1600,56 @@ function UserDashboard({ setPage, activeToken, tokenPosition, setActiveToken, ac
       ) : (
         <div className="p-8 rounded-2xl bg-slate-900/20 border border-slate-800 text-center space-y-2">
           <Clock className="w-10 h-10 text-slate-600 mx-auto" />
-          <h4 className="font-semibold text-slate-300">No Active Tickets in {selectedDomain.toLowerCase()}</h4>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">You don't have any active tokens waiting in this domain. Generate a new token below to queue up.</p>
+          <h4 className="font-semibold text-slate-300">No Active Ticket</h4>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">You don't have any active tokens waiting in a queue. Generate a new token below by selecting a sector.</p>
         </div>
       )}
 
-      {/* Domain Operations Booking Redirect Card */}
+      {/* Select Sector Grid */}
       <div className="space-y-4">
-        <h3 className="text-xl font-bold">Domain Services Booking</h3>
-        <div className="glass-card rounded-2xl p-6 border border-indigo-500/20 bg-indigo-950/5 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-2">
-            <span className="text-[10px] font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 px-2 py-0.5 rounded-full uppercase">Queue Generator Gateway</span>
-            <h4 className="text-lg font-bold text-slate-100 capitalize">{selectedDomain.toLowerCase()} Specialist Booking Panel</h4>
-            <p className="text-xs text-slate-400">Generate a digital token sequence number, configure priorities, and reserve specialist consultation time slots instantly.</p>
-          </div>
-          <button 
-            onClick={() => setPage(selectedDomain.toLowerCase())}
-            className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all cursor-pointer whitespace-nowrap"
+        <h3 className="text-xl font-bold">Select Active Sector</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div 
+            onClick={() => setPage('hospital')}
+            className="glass-card rounded-2xl p-6 cursor-pointer relative overflow-hidden"
           >
-            Open Booking Screen
-            <ArrowRight className="w-4 h-4" />
-          </button>
+            <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-4">
+              <Activity className="w-6 h-6 text-rose-400" />
+            </div>
+            <h4 className="text-lg font-bold">Hospital Operations</h4>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">Book clinical specialist visits, access emergency override queues.</p>
+            <ChevronRight className="absolute bottom-6 right-6 w-5 h-5 text-slate-600 hover:text-white" />
+          </div>
+
+          <div 
+            onClick={() => setPage('bank')}
+            className="glass-card rounded-2xl p-6 cursor-pointer relative overflow-hidden"
+          >
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4">
+              <Building className="w-6 h-6 text-blue-400" />
+            </div>
+            <h4 className="text-lg font-bold">Banking Desks</h4>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">Cash registers, loan consultations, KYC audits, account openings.</p>
+            <ChevronRight className="absolute bottom-6 right-6 w-5 h-5 text-slate-600 hover:text-white" />
+          </div>
+
+          <div 
+            onClick={() => setPage('college')}
+            className="glass-card rounded-2xl p-6 cursor-pointer relative overflow-hidden"
+          >
+            <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-4">
+              <BookOpen className="w-6 h-6 text-violet-400" />
+            </div>
+            <h4 className="text-lg font-bold">College Offices</h4>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">Student registrations, ID cards, fees payment, bonafide approvals.</p>
+            <ChevronRight className="absolute bottom-6 right-6 w-5 h-5 text-slate-600 hover:text-white" />
+          </div>
         </div>
       </div>
 
       {/* Booking History Table */}
       <div className="space-y-4">
-        <h3 className="text-xl font-bold">Token & Booking Logs ({selectedDomain.toLowerCase()})</h3>
+        <h3 className="text-xl font-bold">Token & Booking Logs</h3>
         <div className="glass-panel border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -1793,12 +1663,12 @@ function UserDashboard({ setPage, activeToken, tokenPosition, setActiveToken, ac
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-xs">
-                {filteredHistory.length === 0 ? (
+                {history.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-8 text-slate-500">No token logs available for this domain</td>
+                    <td colSpan="5" className="text-center py-8 text-slate-500">No token logs available</td>
                   </tr>
                 ) : (
-                  filteredHistory.map(item => (
+                  history.map(item => (
                     <tr key={item.id} className="hover:bg-slate-800/20 transition-colors">
                       <td className="px-6 py-4 font-bold text-blue-400">{item.tokenNumber}</td>
                       <td className="px-6 py-4">
@@ -1991,35 +1861,35 @@ function HospitalModule({ setPage }) {
   };
 
   const getDiseaseOptions = (specialty) => {
-    if (!specialty) return ['Regular - General Checkup', 'Consultation - General'];
+    if (!specialty) return ['Regular - General Checkup', 'Consultation - General', 'Admission - Emergency'];
     const spec = specialty.toLowerCase();
     if (spec.includes('cardio')) {
-      return ['Regular - Blood Pressure Check', 'Consultation - Heart Rate'];
+      return ['Regular - Blood Pressure Check', 'Consultation - Heart Rate', 'Surgery - Cardiology', 'Admission - Chest Pain Observation'];
     }
     if (spec.includes('neuro')) {
-      return ['Regular - Nerve Pain Screening', 'Consultation - Migraine'];
+      return ['Regular - Nerve Pain Screening', 'Consultation - Migraine', 'Surgery - Neuromuscular', 'Admission - Neurology'];
     }
     if (spec.includes('ortho')) {
-      return ['Regular - Joint Pain Check', 'Consultation - Arthritis'];
+      return ['Regular - Joint Pain Check', 'Consultation - Arthritis', 'Surgery - Fracture / Spine', 'Admission - Ortho'];
     }
     switch (specialty) {
       case 'Dermatologist':
       case 'Dermatology':
-        return ['Regular - Skin Allergy', 'Consultation - Hair Loss'];
+        return ['Regular - Skin Allergy', 'Consultation - Hair Loss', 'Surgery - Skin Grafting / Cyst Removal'];
       case 'Pediatrician':
       case 'Pediatrics':
-        return ['Regular - Fever & Cold', 'Consultation - Child Growth'];
+        return ['Regular - Fever & Cold', 'Consultation - Child Growth', 'Admission - Pediatric Emergency'];
       case 'ENT Specialist':
       case 'ENT':
-        return ['Regular - Ear Infection', 'Consultation - Hearing Checkup'];
+        return ['Regular - Ear Infection', 'Consultation - Hearing Checkup', 'Surgery - Tonsils Removal', 'Surgery - Sinus Operation'];
       case 'Cardiologist':
       case 'Cardiology':
-        return ['Regular - BP Checkup', 'Consultation - Heart Pain'];
+        return ['Regular - BP Checkup', 'Consultation - Heart Pain', 'Surgery - Bypass Surgery', 'Surgery - Angioplasty'];
       case 'Neurologist':
       case 'Neurology':
-        return ['Regular - Headaches', 'Consultation - Migraine'];
+        return ['Regular - Headaches', 'Consultation - Migraine', 'Surgery - Brain Tumor Removal'];
       default:
-        return ['Regular - Fever Check', 'Consultation - Health Query'];
+        return ['Regular - Fever Check', 'Consultation - Health Query', 'Surgery - General Appendix Removal', 'Admission - Inpatient Care'];
     }
   };
 
@@ -2093,37 +1963,11 @@ function HospitalModule({ setPage }) {
     }
   };
 
-  const handleBack = () => {
-    if (selectedSlot) {
-      setSelectedSlot(null);
-    } else if (selectedDoc) {
-      setSelectedDoc(null);
-      setSlots([]);
-    } else if (selectedBranch) {
-      setSelectedBranch(null);
-      setDoctors([]);
-    } else if (selectedHosp) {
-      setSelectedHosp(null);
-      setBranches([]);
-    } else {
-      setPage('dashboard');
-    }
-  };
-
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4 pb-4 border-b border-slate-900">
-        <button 
-          onClick={handleBack} 
-          className="flex items-center space-x-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold rounded-xl text-slate-300 transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back</span>
-        </button>
-        <div>
-          <h2 className="text-3xl font-extrabold">Hospital Booking Module</h2>
-          <p className="text-xs text-slate-400 mt-1">Select specialized centers and book tokens in live queues.</p>
-        </div>
+      <div className="pb-4 border-b border-slate-900">
+        <h2 className="text-3xl font-extrabold">Hospital Booking Module</h2>
+        <p className="text-xs text-slate-400 mt-1">Select specialized centers and book tokens in live queues.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -2436,37 +2280,11 @@ function BankModule({ setPage }) {
     }
   };
 
-  const handleBack = () => {
-    if (selectedSlot) {
-      setSelectedSlot(null);
-    } else if (selectedCounter) {
-      setSelectedCounter(null);
-      setSlots([]);
-    } else if (selectedBranch) {
-      setSelectedBranch(null);
-      setCounters([]);
-    } else if (selectedBank) {
-      setSelectedBank(null);
-      setBranches([]);
-    } else {
-      setPage('dashboard');
-    }
-  };
-
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4 pb-4 border-b border-slate-900">
-        <button 
-          onClick={handleBack} 
-          className="flex items-center space-x-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold rounded-xl text-slate-300 transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back</span>
-        </button>
-        <div>
-          <h2 className="text-3xl font-extrabold">Banking Counter Module</h2>
-          <p className="text-xs text-slate-400 mt-1">Select branches, define service, and register counter tickets.</p>
-        </div>
+      <div className="pb-4 border-b border-slate-900">
+        <h2 className="text-3xl font-extrabold">Banking Counter Module</h2>
+        <p className="text-xs text-slate-400 mt-1">Select branches, define service, and register counter tickets.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -2774,37 +2592,11 @@ function CollegeModule({ setPage }) {
     }
   };
 
-  const handleBack = () => {
-    if (selectedSlot) {
-      setSelectedSlot(null);
-    } else if (selectedCounter) {
-      setSelectedCounter(null);
-      setSlots([]);
-    } else if (selectedDept) {
-      setSelectedDept(null);
-      setCounters([]);
-    } else if (selectedCol) {
-      setSelectedCol(null);
-      setDepartments([]);
-    } else {
-      setPage('dashboard');
-    }
-  };
-
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4 pb-4 border-b border-slate-900">
-        <button 
-          onClick={handleBack} 
-          className="flex items-center space-x-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold rounded-xl text-slate-300 transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back</span>
-        </button>
-        <div>
-          <h2 className="text-3xl font-extrabold">College Office Module</h2>
-          <p className="text-xs text-slate-400 mt-1">Select departments, request services, and verify positions.</p>
-        </div>
+      <div className="pb-4 border-b border-slate-900">
+        <h2 className="text-3xl font-extrabold">College Office Module</h2>
+        <p className="text-xs text-slate-400 mt-1">Select departments, request services, and verify positions.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -3437,65 +3229,11 @@ function AdminDashboard() {
   const [collegeForm, setCollegeForm] = useState({ name: '', logoUrl: '' });
 
   // Custom Report Module states
-  const [activeView, setActiveView] = useState('overview'); // overview, reports, users, staff
+  const [activeView, setActiveView] = useState('overview'); // overview, reports
   const [tokensList, setTokensList] = useState([]);
   const [reportsFilter, setReportsFilter] = useState({ startDate: '', endDate: '', category: 'ALL', status: 'ALL' });
   const [chartType, setChartType] = useState('bar'); // bar, donut, line
   const [syncingTokens, setSyncingTokens] = useState(false);
-
-  // User and Staff Management states
-  const [usersList, setUsersList] = useState([]);
-  const [staffList, setStaffList] = useState([]);
-  const [mgmtSearch, setMgmtSearch] = useState('');
-  const [mgmtDomainFilter, setMgmtDomainFilter] = useState('ALL');
-  const [mgmtStatusFilter, setMgmtStatusFilter] = useState('ALL');
-  const [mgmtLoading, setMgmtLoading] = useState(false);
-  const [viewingDetailsItem, setViewingDetailsItem] = useState(null); // stores user or staff to view details modal
-
-  const fetchMgmtLists = async () => {
-    setMgmtLoading(true);
-    try {
-      const uRes = await axios.get(`${API_BASE}/admin/users-list`, {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      if (uRes.data.success) setUsersList(uRes.data.data);
-
-      const sRes = await axios.get(`${API_BASE}/admin/staff-list`, {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      if (sRes.data.success) setStaffList(sRes.data.data);
-    } catch (err) {
-      console.error("Error fetching management lists:", err);
-    } finally {
-      setMgmtLoading(false);
-    }
-  };
-
-  const handleToggleUserStatus = async (userId) => {
-    try {
-      const res = await axios.post(`${API_BASE}/admin/users/${userId}/toggle-status`, {}, {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      if (res.data.success) {
-        fetchMgmtLists();
-      }
-    } catch (err) {
-      alert("Failed to toggle user status: " + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleToggleStaffStatus = async (staffId) => {
-    try {
-      const res = await axios.post(`${API_BASE}/admin/staff/${staffId}/toggle-status`, {}, {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      if (res.data.success) {
-        fetchMgmtLists();
-      }
-    } catch (err) {
-      alert("Failed to toggle staff status: " + (err.response?.data?.message || err.message));
-    }
-  };
 
   const fetchTokens = async () => {
     setSyncingTokens(true);
@@ -3571,7 +3309,6 @@ function AdminDashboard() {
       fetchStats();
       fetchLists();
       fetchTokens();
-      fetchMgmtLists();
     };
 
     window.addEventListener('sq_queue_update', handleSseRefresh);
@@ -3579,14 +3316,12 @@ function AdminDashboard() {
     fetchStats();
     fetchLists();
     fetchTokens();
-    fetchMgmtLists();
 
     // Fallback slow polling every 15 seconds
     const interval = setInterval(() => {
       fetchStats();
       fetchLists();
       fetchTokens();
-      fetchMgmtLists();
     }, 15000);
 
     return () => {
@@ -3717,25 +3452,12 @@ function AdminDashboard() {
     if (t.status === 'COMPLETED' && t.createdAt && t.updatedAt) {
       const diff = new Date(t.updatedAt) - new Date(t.createdAt);
       if (diff > 0) {
-        let mins = Math.floor(diff / 60000);
-        if (mins > 60) {
-          mins = 10 + (t.id % 15);
-        }
-        totalMins += mins;
+        totalMins += Math.floor(diff / 60000);
         validCount++;
       }
     }
   });
-  
-  let avgWaitFiltered = 0;
-  if (validCount > 0) {
-    avgWaitFiltered = Math.floor(totalMins / validCount);
-  } else {
-    const activeFiltered = filteredTokens.filter(t => t.status === 'WAITING' || t.status === 'SERVING').length;
-    if (activeFiltered > 0) {
-      avgWaitFiltered = 10 + (activeFiltered * 5) + (activeFiltered % 3);
-    }
-  }
+  const avgWaitFiltered = validCount > 0 ? Math.floor(totalMins / validCount) : 0;
 
   // Chart data calculations
   const hospTokens = filteredTokens.filter(t => t.sectorType === 'HOSPITAL').length;
@@ -3786,7 +3508,7 @@ function AdminDashboard() {
           <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">Admin Control Panel</h2>
           <p className="text-xs text-slate-400 mt-1">Cross-system diagnostics, system metrics, and department CRUD tools.</p>
         </div>
-        <div className="flex flex-wrap gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold self-start md:self-auto shadow-md">
+        <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold self-start md:self-auto shadow-md">
           <button 
             onClick={() => setActiveView('overview')}
             className={`px-4 py-2 rounded-lg transition-colors cursor-pointer ${activeView === 'overview' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
@@ -3798,18 +3520,6 @@ function AdminDashboard() {
             className={`px-4 py-2 rounded-lg transition-colors cursor-pointer ${activeView === 'reports' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Report Dashboard 📊
-          </button>
-          <button 
-            onClick={() => { setActiveView('users'); fetchMgmtLists(); }}
-            className={`px-4 py-2 rounded-lg transition-colors cursor-pointer ${activeView === 'users' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-          >
-            User Directory 👥
-          </button>
-          <button 
-            onClick={() => { setActiveView('staff'); fetchMgmtLists(); }}
-            className={`px-4 py-2 rounded-lg transition-colors cursor-pointer ${activeView === 'staff' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-          >
-            Staff Directory 👔
           </button>
         </div>
       </div>
@@ -4420,420 +4130,6 @@ function AdminDashboard() {
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Admin User Management Directory (CHANGE 5 & CHANGE 6) */}
-      {activeView === 'users' && (
-        <div className="space-y-6 animate-fadeIn">
-          {/* User management statistics grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Total Users</span>
-              <span className="text-2xl font-extrabold text-slate-200">{usersList.length}</span>
-            </div>
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Active Users</span>
-              <span className="text-2xl font-extrabold text-indigo-400">{usersList.filter(u => u.status === 'ACTIVE' || !u.status).length}</span>
-            </div>
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Hospital Users</span>
-              <span className="text-2xl font-extrabold text-rose-400">{usersList.filter(u => tokensList.filter(t => t.user?.id === u.id).slice(-1)[0]?.sectorType === 'HOSPITAL').length}</span>
-            </div>
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Bank Users</span>
-              <span className="text-2xl font-extrabold text-blue-400">{usersList.filter(u => tokensList.filter(t => t.user?.id === u.id).slice(-1)[0]?.sectorType === 'BANK').length}</span>
-            </div>
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">College Users</span>
-              <span className="text-2xl font-extrabold text-violet-400">{usersList.filter(u => tokensList.filter(t => t.user?.id === u.id).slice(-1)[0]?.sectorType === 'COLLEGE').length}</span>
-            </div>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="glass-panel border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-lg">
-            <div className="w-full md:max-w-md relative">
-              <input
-                type="text"
-                value={mgmtSearch}
-                onChange={e => setMgmtSearch(e.target.value)}
-                placeholder="Search by User Name, Email, or ID..."
-                className="w-full bg-slate-900 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-colors"
-              />
-            </div>
-            <div className="flex gap-3 w-full md:w-auto">
-              <select
-                value={mgmtDomainFilter}
-                onChange={e => setMgmtDomainFilter(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition-colors"
-              >
-                <option value="ALL">All Domains</option>
-                <option value="HOSPITAL">Hospital</option>
-                <option value="BANK">Bank</option>
-                <option value="COLLEGE">College</option>
-              </select>
-              <select
-                value={mgmtStatusFilter}
-                onChange={e => setMgmtStatusFilter(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition-colors"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="ACTIVE">Active Only</option>
-                <option value="INACTIVE">Inactive Only</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Users Table */}
-          <div className="glass-panel border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            {mgmtLoading ? (
-              <div className="py-12 text-center text-slate-500">Loading user directory...</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-900/60 border-b border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      <th className="px-6 py-4">User ID</th>
-                      <th className="px-6 py-4">Name / Username</th>
-                      <th className="px-6 py-4">Email</th>
-                      <th className="px-6 py-4">Selected Domain</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Registration Date</th>
-                      <th className="px-6 py-4">Last Login Time</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {usersList.filter(u => {
-                      const q = mgmtSearch.toLowerCase();
-                      const domain = tokensList.filter(t => t.user?.id === u.id).slice(-1)[0]?.sectorType || 'NONE';
-                      const matchesSearch = u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || String(u.id).includes(q);
-                      const matchesDomain = mgmtDomainFilter === 'ALL' || domain === mgmtDomainFilter;
-                      const uStatus = u.status || 'ACTIVE';
-                      const matchesStatus = mgmtStatusFilter === 'ALL' || uStatus === mgmtStatusFilter;
-                      return matchesSearch && matchesDomain && matchesStatus;
-                    }).length === 0 ? (
-                      <tr>
-                        <td colSpan="8" className="text-center py-8 text-slate-500 italic">No users found match criteria</td>
-                      </tr>
-                    ) : (
-                      usersList.filter(u => {
-                        const q = mgmtSearch.toLowerCase();
-                        const domain = tokensList.filter(t => t.user?.id === u.id).slice(-1)[0]?.sectorType || 'NONE';
-                        const matchesSearch = u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || String(u.id).includes(q);
-                        const matchesDomain = mgmtDomainFilter === 'ALL' || domain === mgmtDomainFilter;
-                        const uStatus = u.status || 'ACTIVE';
-                        const matchesStatus = mgmtStatusFilter === 'ALL' || uStatus === mgmtStatusFilter;
-                        return matchesSearch && matchesDomain && matchesStatus;
-                      }).map(u => {
-                        const domain = tokensList.filter(t => t.user?.id === u.id).slice(-1)[0]?.sectorType || 'None';
-                        const uStatus = u.status || 'ACTIVE';
-                        return (
-                          <tr key={u.id} className="hover:bg-slate-800/20 transition-colors">
-                            <td className="px-6 py-4 font-extrabold text-blue-400">#USR-{u.id}</td>
-                            <td className="px-6 py-4">
-                              <div className="font-semibold text-slate-200">{u.fullName}</div>
-                              <div className="text-[10px] text-slate-400">@{u.username}</div>
-                            </td>
-                            <td className="px-6 py-4 text-slate-300 font-medium">{u.email}</td>
-                            <td className="px-6 py-4 capitalize">
-                              <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${domain === 'HOSPITAL' ? 'bg-rose-500/10 text-rose-400' : domain === 'BANK' ? 'bg-blue-500/10 text-blue-400' : domain === 'COLLEGE' ? 'bg-violet-500/10 text-violet-400' : 'bg-slate-800 text-slate-400'}`}>
-                                {domain}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold ${uStatus === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-                                {uStatus}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-slate-400">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}</td>
-                            <td className="px-6 py-4 text-slate-400">{u.lastLoginTime ? new Date(u.lastLoginTime).toLocaleString() : 'Never Logged In'}</td>
-                            <td className="px-6 py-4 text-right space-x-2">
-                              <button 
-                                onClick={() => setViewingDetailsItem({ type: 'user', data: u, domain })}
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-bold text-slate-300 rounded-lg cursor-pointer"
-                              >
-                                View
-                              </button>
-                              <button 
-                                onClick={() => handleToggleUserStatus(u.id)}
-                                className={`px-2.5 py-1 text-[10px] font-bold rounded-lg cursor-pointer ${uStatus === 'ACTIVE' ? 'bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400' : 'bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400'}`}
-                              >
-                                {uStatus === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Admin Staff Management Directory (CHANGE 5 & CHANGE 6) */}
-      {activeView === 'staff' && (
-        <div className="space-y-6 animate-fadeIn">
-          {/* Staff statistics grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Total Operators</span>
-              <span className="text-2xl font-extrabold text-slate-200">{staffList.length}</span>
-            </div>
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Active Operators</span>
-              <span className="text-2xl font-extrabold text-emerald-400">{staffList.filter(s => s.user?.status === 'ACTIVE' || !s.user?.status).length}</span>
-            </div>
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Hospital Staff</span>
-              <span className="text-2xl font-extrabold text-rose-400">{staffList.filter(s => s.sectorType === 'HOSPITAL').length}</span>
-            </div>
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Bank Staff</span>
-              <span className="text-2xl font-extrabold text-blue-400">{staffList.filter(s => s.sectorType === 'BANK').length}</span>
-            </div>
-            <div className="glass-card rounded-2xl p-4 border border-slate-800/80">
-              <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">College Staff</span>
-              <span className="text-2xl font-extrabold text-violet-400">{staffList.filter(s => s.sectorType === 'COLLEGE').length}</span>
-            </div>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="glass-panel border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-lg">
-            <div className="w-full md:max-w-md relative">
-              <input
-                type="text"
-                value={mgmtSearch}
-                onChange={e => setMgmtSearch(e.target.value)}
-                placeholder="Search Staff by Name, Email, or ID..."
-                className="w-full bg-slate-900 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs focus:outline-none transition-colors"
-              />
-            </div>
-            <div className="flex gap-3 w-full md:w-auto">
-              <select
-                value={mgmtDomainFilter}
-                onChange={e => setMgmtDomainFilter(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition-colors"
-              >
-                <option value="ALL">All Domains</option>
-                <option value="HOSPITAL">Hospital</option>
-                <option value="BANK">Bank</option>
-                <option value="COLLEGE">College</option>
-              </select>
-              <select
-                value={mgmtStatusFilter}
-                onChange={e => setMgmtStatusFilter(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition-colors"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="ACTIVE">Active Only</option>
-                <option value="INACTIVE">Inactive Only</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Staff Table */}
-          <div className="glass-panel border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            {mgmtLoading ? (
-              <div className="py-12 text-center text-slate-500">Loading staff directory...</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-900/60 border-b border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      <th className="px-6 py-4">Staff ID</th>
-                      <th className="px-6 py-4">Staff Name</th>
-                      <th className="px-6 py-4">Email</th>
-                      <th className="px-6 py-4">Assigned Domain</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Registration Date</th>
-                      <th className="px-6 py-4">Last Login Time</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {staffList.filter(s => {
-                      const q = mgmtSearch.toLowerCase();
-                      const name = s.user?.fullName || '';
-                      const email = s.user?.email || '';
-                      const matchesSearch = name.toLowerCase().includes(q) || email.toLowerCase().includes(q) || String(s.id).includes(q);
-                      const matchesDomain = mgmtDomainFilter === 'ALL' || s.sectorType === mgmtDomainFilter;
-                      const sStatus = s.user?.status || 'ACTIVE';
-                      const matchesStatus = mgmtStatusFilter === 'ALL' || sStatus === mgmtStatusFilter;
-                      return matchesSearch && matchesDomain && matchesStatus;
-                    }).length === 0 ? (
-                      <tr>
-                        <td colSpan="8" className="text-center py-8 text-slate-500 italic">No operators found matching filters</td>
-                      </tr>
-                    ) : (
-                      staffList.filter(s => {
-                        const q = mgmtSearch.toLowerCase();
-                        const name = s.user?.fullName || '';
-                        const email = s.user?.email || '';
-                        const matchesSearch = name.toLowerCase().includes(q) || email.toLowerCase().includes(q) || String(s.id).includes(q);
-                        const matchesDomain = mgmtDomainFilter === 'ALL' || s.sectorType === mgmtDomainFilter;
-                        const sStatus = s.user?.status || 'ACTIVE';
-                        const matchesStatus = mgmtStatusFilter === 'ALL' || sStatus === mgmtStatusFilter;
-                        return matchesSearch && matchesDomain && matchesStatus;
-                      }).map(s => {
-                        const sStatus = s.user?.status || 'ACTIVE';
-                        return (
-                          <tr key={s.id} className="hover:bg-slate-800/20 transition-colors">
-                            <td className="px-6 py-4 font-extrabold text-blue-400">#STF-{s.id}</td>
-                            <td className="px-6 py-4">
-                              <div className="font-semibold text-slate-200">{s.user?.fullName}</div>
-                              <div className="text-[10px] text-slate-400">Counter: {s.counter?.counterName || 'Not Assigned'}</div>
-                            </td>
-                            <td className="px-6 py-4 text-slate-300 font-medium">{s.user?.email}</td>
-                            <td className="px-6 py-4 capitalize">
-                              <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${s.sectorType === 'HOSPITAL' ? 'bg-rose-500/10 text-rose-400' : s.sectorType === 'BANK' ? 'bg-blue-500/10 text-blue-400' : 'bg-violet-500/10 text-violet-400'}`}>
-                                {s.sectorType}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold ${sStatus === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-                                {sStatus}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-slate-400">{s.user?.createdAt ? new Date(s.user.createdAt).toLocaleDateString() : 'N/A'}</td>
-                            <td className="px-6 py-4 text-slate-400">{s.user?.lastLoginTime ? new Date(s.user.lastLoginTime).toLocaleString() : 'Never Logged In'}</td>
-                            <td className="px-6 py-4 text-right space-x-2">
-                              <button 
-                                onClick={() => setViewingDetailsItem({ type: 'staff', data: s, domain: s.sectorType })}
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-bold text-slate-300 rounded-lg cursor-pointer"
-                              >
-                                View
-                              </button>
-                              <button 
-                                onClick={() => handleToggleStaffStatus(s.id)}
-                                className={`px-2.5 py-1 text-[10px] font-bold rounded-lg cursor-pointer ${sStatus === 'ACTIVE' ? 'bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400' : 'bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400'}`}
-                              >
-                                {sStatus === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Detailed View Modal (CHANGE 5) */}
-      {viewingDetailsItem && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="glass-panel border border-slate-800 rounded-2xl p-6 w-full max-w-md space-y-6 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <span className="text-xs font-extrabold uppercase tracking-widest text-slate-400 capitalize">
-                {viewingDetailsItem.type} Detailed Profile
-              </span>
-              <button 
-                onClick={() => setViewingDetailsItem(null)} 
-                className="text-slate-500 hover:text-slate-200 text-xs font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {viewingDetailsItem.type === 'user' ? (
-                viewingDetailsItem.data.profileImage ? (
-                  <img src={viewingDetailsItem.data.profileImage} alt="Avatar" className="w-16 h-16 rounded-xl object-cover border border-slate-700" />
-                ) : (
-                  <div className="w-16 h-16 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-2xl uppercase">
-                    {viewingDetailsItem.data.fullName.substring(0, 2)}
-                  </div>
-                )
-              ) : (
-                viewingDetailsItem.data.user?.profileImage ? (
-                  <img src={viewingDetailsItem.data.user.profileImage} alt="Avatar" className="w-16 h-16 rounded-xl object-cover border border-slate-700" />
-                ) : (
-                  <div className="w-16 h-16 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold text-2xl uppercase">
-                    {viewingDetailsItem.data.user?.fullName.substring(0, 2)}
-                  </div>
-                )
-              )}
-              <div>
-                <h4 className="text-lg font-bold text-slate-200">
-                  {viewingDetailsItem.type === 'user' ? viewingDetailsItem.data.fullName : viewingDetailsItem.data.user?.fullName}
-                </h4>
-                <p className="text-xs text-slate-400">
-                  @{viewingDetailsItem.type === 'user' ? viewingDetailsItem.data.username : viewingDetailsItem.data.user?.username}
-                </p>
-                <span className={`inline-block mt-2 px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${viewingDetailsItem.type === 'user' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                  {viewingDetailsItem.type}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3.5 text-xs">
-              <div className="flex justify-between border-b border-slate-900 pb-2">
-                <span className="text-slate-500 font-medium">Record ID</span>
-                <span className="font-semibold text-slate-300">
-                  {viewingDetailsItem.type === 'user' ? `#USR-${viewingDetailsItem.data.id}` : `#STF-${viewingDetailsItem.data.id}`}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-slate-900 pb-2">
-                <span className="text-slate-500 font-medium">Email Address</span>
-                <span className="font-semibold text-slate-300">
-                  {viewingDetailsItem.type === 'user' ? viewingDetailsItem.data.email : viewingDetailsItem.data.user?.email}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-slate-900 pb-2">
-                <span className="text-slate-500 font-medium">Phone Number</span>
-                <span className="font-semibold text-slate-300">
-                  {viewingDetailsItem.type === 'user' ? (viewingDetailsItem.data.phoneNumber || 'Not Specified') : (viewingDetailsItem.data.user?.phoneNumber || 'Not Specified')}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-slate-900 pb-2">
-                <span className="text-slate-500 font-medium">Active Domain</span>
-                <span className="font-bold text-slate-200 capitalize">
-                  {viewingDetailsItem.domain}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-slate-900 pb-2">
-                <span className="text-slate-500 font-medium">System Status</span>
-                <span className={`font-bold ${
-                  (viewingDetailsItem.type === 'user' ? viewingDetailsItem.data.status : viewingDetailsItem.data.user?.status) === 'ACTIVE' || !(viewingDetailsItem.type === 'user' ? viewingDetailsItem.data.status : viewingDetailsItem.data.user?.status)
-                    ? 'text-emerald-400' : 'text-rose-400'
-                }`}>
-                  {viewingDetailsItem.type === 'user' ? (viewingDetailsItem.data.status || 'ACTIVE') : (viewingDetailsItem.data.user?.status || 'ACTIVE')}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-slate-900 pb-2">
-                <span className="text-slate-500 font-medium">Created On</span>
-                <span className="font-semibold text-slate-300">
-                  {viewingDetailsItem.type === 'user'
-                    ? (viewingDetailsItem.data.createdAt ? new Date(viewingDetailsItem.data.createdAt).toLocaleString() : 'N/A')
-                    : (viewingDetailsItem.data.user?.createdAt ? new Date(viewingDetailsItem.data.user.createdAt).toLocaleString() : 'N/A')
-                  }
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-slate-900 pb-2">
-                <span className="text-slate-500 font-medium">Last Login Record</span>
-                <span className="font-semibold text-slate-300">
-                  {viewingDetailsItem.type === 'user'
-                    ? (viewingDetailsItem.data.lastLoginTime ? new Date(viewingDetailsItem.data.lastLoginTime).toLocaleString() : 'Never Logged In')
-                    : (viewingDetailsItem.data.user?.lastLoginTime ? new Date(viewingDetailsItem.data.user.lastLoginTime).toLocaleString() : 'Never Logged In')
-                  }
-                </span>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => setViewingDetailsItem(null)}
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-xs font-bold text-slate-300 rounded-xl transition-colors cursor-pointer"
-            >
-              Close Profile Details
-            </button>
           </div>
         </div>
       )}
