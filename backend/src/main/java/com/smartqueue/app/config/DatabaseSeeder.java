@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-@Component
+// @Component
 public class DatabaseSeeder implements CommandLineRunner {
 
     @Autowired private UserRepository userRepository;
