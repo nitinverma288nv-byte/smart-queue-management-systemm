@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 // const API_BASE = 'http://localhost:9999/api';
-const API_BASE = "https://smart-queue-management-system-production.up.railway.app/api";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://smart-queue-management-system-production.up.railway.app/api";
 
 // Create Global Auth Context
 const AuthContext = createContext(null);
@@ -471,7 +471,7 @@ function MainLayout() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Need Assistance? IT Help & Support</span>
             <div className="flex items-center gap-2 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              <a href="mailto:pankajlucky678@gmail.com" className="hover:underline">pankajlucky678@gmail.com</a>
+              <a href="mailto:nitinverma288nv@gmail.com" className="hover:underline">nitinverma288nv@gmail.com</a>
             </div>
             <span className="text-[10px] text-slate-500">Reach out to our operations desk for technical queries, instant queue disputes or campus support.</span>
           </div>
