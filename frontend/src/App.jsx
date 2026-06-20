@@ -6,7 +6,7 @@ import {
   BookOpen, 
   Clock, 
   Users, 
-  // User as UserIcon,  
+  User as UserIcon,  
   Bell, 
   LogOut, 
   ArrowRight, 
