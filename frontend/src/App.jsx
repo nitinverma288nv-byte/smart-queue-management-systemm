@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 // const API_BASE = 'http://localhost:9999/api';
-const API_BASE = import.meta.env.VITE_API_BASE || "https://smart-queue-management-system-production.up.railway.app/api";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://smart-queue-management-systemm-production.up.railway.app/api";
 
 // Create Global Auth Context
 const AuthContext = createContext(null);
